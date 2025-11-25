@@ -1,0 +1,12 @@
+PyMuPDF==1.23.8
+llama-index-core==0.10.0
+google-generativeai==0.4.1
+python-dotenv
+numpy
+sentence-transformers
+langchain
+langchain-google-genai
+langchain-anthropic
+chromadb
+tqdm
+pydantic>=2.0.0

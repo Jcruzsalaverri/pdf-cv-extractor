@@ -1,0 +1,64 @@
+# Environment variables (contains API keys)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+.venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+
+# Personal data
+cvs/*
+processed_cvs/* 
+cv_metadata.json
+
+# Output files (in data/ folder)
+data/*.txt
+data/*.json
+data/*.pkl
+data/*.pickle
+
+# Except example files
+!.env.example
+!requirements.txt
+!examples/*.txt
+!data/.gitkeep
+
+# Vector database
+chroma_db/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
