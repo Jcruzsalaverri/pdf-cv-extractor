@@ -12,13 +12,14 @@ from config import Config
 import re
 
 
-def initialize_cleaning_llm(provider: str = None, temperature: float = 0.1):
+def initialize_cleaning_llm(provider: str = None, temperature: float = 0.1, api_key: str = None):
     """
     Initialize LLM for text cleaning (low temperature for consistency).
     
     Args:
         provider (str, optional): "gemini" or "claude"
         temperature (float): Low temperature for consistent cleaning
+        api_key (str, optional): Specific API key to use (for rotation)
     
     Returns:
         LLM instance
@@ -26,12 +27,15 @@ def initialize_cleaning_llm(provider: str = None, temperature: float = 0.1):
     provider = provider or Config.LLM_PROVIDER
     
     if provider == "gemini":
-        if not Config.GEMINI_API_KEY:
+        # Use provided key or get from config
+        gemini_key = api_key or Config.GEMINI_API_KEY
+        
+        if not gemini_key:
             raise ValueError("GEMINI_API_KEY not set")
         
         llm = ChatGoogleGenerativeAI(
             model=Config.GEMINI_MODEL,
-            google_api_key=Config.GEMINI_API_KEY,
+            google_api_key=gemini_key,
             temperature=temperature,
             convert_system_message_to_human=True
         )
@@ -51,7 +55,7 @@ def initialize_cleaning_llm(provider: str = None, temperature: float = 0.1):
     return llm
 
 
-def clean_cv_text(raw_text: str, provider: str = None, use_llm: bool = True) -> str:
+def clean_cv_text(raw_text: str, provider: str = None, use_llm: bool = True, api_key: str = None) -> str:
     """
     Clean and normalize CV text to improve embedding quality.
     
@@ -59,6 +63,7 @@ def clean_cv_text(raw_text: str, provider: str = None, use_llm: bool = True) -> 
         raw_text (str): Raw text extracted from PDF
         provider (str, optional): LLM provider
         use_llm (bool): Whether to use LLM cleaning (True) or rule-based (False)
+        api_key (str, optional): Specific API key to use (for rotation)
     
     Returns:
         str: Cleaned and normalized text
@@ -71,7 +76,7 @@ def clean_cv_text(raw_text: str, provider: str = None, use_llm: bool = True) -> 
     
     # LLM-based deep cleaning (optional but recommended)
     if use_llm:
-        text = _llm_based_cleaning(text, provider)
+        text = _llm_based_cleaning(text, provider, api_key=api_key)
     
     return text
 
@@ -111,18 +116,19 @@ def _rule_based_cleaning(text: str) -> str:
     return text.strip()
 
 
-def _llm_based_cleaning(text: str, provider: str = None) -> str:
+def _llm_based_cleaning(text: str, provider: str = None, api_key: str = None) -> str:
     """
     Use LLM to deeply clean and normalize CV text.
     
     Args:
         text (str): Pre-cleaned text
         provider (str, optional): LLM provider
+        api_key (str, optional): Specific API key to use
     
     Returns:
         str: LLM-cleaned text
     """
-    llm = initialize_cleaning_llm(provider)
+    llm = initialize_cleaning_llm(provider, api_key=api_key)
     
     system_prompt = """You are a text normalization assistant for CV/Resume processing.
 
@@ -170,13 +176,14 @@ Output (cleaned text only):"""
 
 
 
-def clean_and_structure_cv(raw_text: str, provider: str = None) -> Dict[str, any]:
+def clean_and_structure_cv(raw_text: str, provider: str = None, api_key: str = None) -> Dict[str, any]:
     """
     Complete cleaning pipeline for CV text.
     
     Args:
         raw_text (str): Raw PDF text
         provider (str, optional): LLM provider
+        api_key (str, optional): Specific API key to use (for rotation)
     
     Returns:
         Dict containing cleaned_text and metadata
@@ -184,7 +191,7 @@ def clean_and_structure_cv(raw_text: str, provider: str = None) -> Dict[str, any
     print("🧹 Cleaning CV text...")
     
     # Clean text
-    cleaned_text = clean_cv_text(raw_text, provider=provider, use_llm=True)
+    cleaned_text = clean_cv_text(raw_text, provider=provider, use_llm=True, api_key=api_key)
     
     print(f"   Original length: {len(raw_text)} chars")
     print(f"   Cleaned length: {len(cleaned_text)} chars")

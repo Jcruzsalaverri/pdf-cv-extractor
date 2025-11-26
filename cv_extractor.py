@@ -99,13 +99,14 @@ class CVData(BaseModel):
         return self.model_dump_json(indent=2, exclude_none=False)
 
 
-def initialize_extraction_llm(provider: str = None, temperature: float = 0.1):
+def initialize_extraction_llm(provider: str = None, temperature: float = 0.1, api_key: str = None):
     """
     Initialize LLM for extraction (low temperature for consistency).
     
     Args:
         provider (str, optional): "gemini" or "claude"
         temperature (float): Low temperature for factual extraction
+        api_key (str, optional): Specific API key to use (for rotation)
     
     Returns:
         LLM instance
@@ -113,19 +114,26 @@ def initialize_extraction_llm(provider: str = None, temperature: float = 0.1):
     provider = provider or Config.LLM_PROVIDER
     
     if provider == "gemini":
-        if not Config.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY not set")
+        # Use provided key or get from config
+        gemini_key = api_key or Config.GEMINI_API_KEY
+        
+        if not gemini_key:
+            raise ValueError(
+                "GEMINI_API_KEY not set. Please set it in .env file or use LLM_PROVIDER=claude"
+            )
         
         llm = ChatGoogleGenerativeAI(
             model=Config.GEMINI_MODEL,
-            google_api_key=Config.GEMINI_API_KEY,
+            google_api_key=gemini_key,
             temperature=temperature,
             convert_system_message_to_human=True
         )
         
     elif provider == "claude":
         if not Config.ANTHROPIC_API_KEY:
-            raise ValueError("ANTHROPIC_API_KEY not set")
+            raise ValueError(
+                "ANTHROPIC_API_KEY not set. Please set it in .env file or use LLM_PROVIDER=gemini"
+            )
         
         llm = ChatAnthropic(
             model=Config.CLAUDE_MODEL,
@@ -138,7 +146,7 @@ def initialize_extraction_llm(provider: str = None, temperature: float = 0.1):
     return llm
 
 
-def extract_cv_data(cv_text: str, source_file: str = "", provider: str = None) -> CVData:
+def extract_cv_data(cv_text: str, source_file: str = "", provider: str = None, api_key: str = None) -> CVData:
     """
     Extract structured data from CV text using LLM.
     
@@ -146,11 +154,12 @@ def extract_cv_data(cv_text: str, source_file: str = "", provider: str = None) -
         cv_text (str): Cleaned CV text
         source_file (str): Source filename
         provider (str, optional): LLM provider
+        api_key (str, optional): Specific API key to use (for rotation)
     
     Returns:
         CVData: Extracted structured data
     """
-    llm = initialize_extraction_llm(provider)
+    llm = initialize_extraction_llm(provider, api_key=api_key)
     
     system_prompt = """You are a CV/Resume data extraction assistant.
 

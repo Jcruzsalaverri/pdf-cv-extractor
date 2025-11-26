@@ -13,14 +13,53 @@ class Config:
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     
+    # Multiple Gemini API Keys for rotation (to avoid rate limits)
+    GEMINI_API_KEYS: list = []
+    
+    @classmethod
+    def _load_gemini_keys(cls):
+        """Load all available Gemini API keys from environment."""
+        if cls.GEMINI_API_KEYS:
+            return  # Already loaded
+        
+        keys = []
+        
+        # Option 1: Comma-separated list in GEMINI_API_KEYS (recommended)
+        keys_env = os.getenv("GEMINI_API_KEYS")
+        if keys_env:
+            # Split by comma and strip whitespace
+            keys = [key.strip() for key in keys_env.split(",") if key.strip()]
+        else:
+            # Option 2: Fallback to individual keys for backward compatibility
+            # Add primary key if exists
+            if cls.GEMINI_API_KEY:
+                keys.append(cls.GEMINI_API_KEY)
+            
+            # Add numbered keys (GEMINI_API_KEY_1, GEMINI_API_KEY_2, etc.)
+            i = 1
+            while True:
+                key = os.getenv(f"GEMINI_API_KEY_{i}")
+                if not key:
+                    break
+                keys.append(key.strip())
+                i += 1
+        
+        cls.GEMINI_API_KEYS = keys
+        if keys:
+            print(f"🔑 Loaded {len(keys)} Gemini API key(s) for rotation")
+    
+    @classmethod
+    def get_gemini_api_keys(cls) -> list:
+        """Get all Gemini API keys."""
+        cls._load_gemini_keys()
+        return cls.GEMINI_API_KEYS
+    
     # Chunking Configuration
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "512"))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "50"))
     
-    # Embedding Configuration
-    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "local")  # "local" or "gemini"
-    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "models/embedding-001")  # For Gemini
-    LOCAL_EMBEDDING_MODEL: str = os.getenv("LOCAL_EMBEDDING_MODEL", "all-mpnet-base-v2")  # Better quality
+    # Embedding Configuration (Local only - no API calls)
+    LOCAL_EMBEDDING_MODEL: str = os.getenv("LOCAL_EMBEDDING_MODEL", "all-mpnet-base-v2")
     EMBEDDING_BATCH_SIZE: int = int(os.getenv("EMBEDDING_BATCH_SIZE", "10"))
     
     # LLM Configuration
@@ -39,18 +78,14 @@ class Config:
     @classmethod
     def validate(cls) -> bool:
         """Validate that required configuration is present."""
-        # Check embedding provider
-        if cls.EMBEDDING_PROVIDER == "gemini" and not cls.GEMINI_API_KEY:
-            raise ValueError(
-                "GEMINI_API_KEY required when EMBEDDING_PROVIDER=gemini. "
-                "Either set the API key or use EMBEDDING_PROVIDER=local (free)."
-            )
-        
-        # Check LLM provider
-        if cls.LLM_PROVIDER == "gemini" and not cls.GEMINI_API_KEY:
-            raise ValueError(
-                "GEMINI_API_KEY required for Gemini LLM. Set LLM_PROVIDER=claude or provide API key."
-            )
+        # Check LLM provider (only place we use API keys)
+        if cls.LLM_PROVIDER == "gemini":
+            keys = cls.get_gemini_api_keys()
+            if not keys:
+                raise ValueError(
+                    "GEMINI_API_KEYS or GEMINI_API_KEY required for Gemini LLM. "
+                    "Set LLM_PROVIDER=claude or provide API key(s)."
+                )
         elif cls.LLM_PROVIDER == "claude" and not cls.ANTHROPIC_API_KEY:
             raise ValueError(
                 "ANTHROPIC_API_KEY required for Claude LLM. Set LLM_PROVIDER=gemini or provide API key."
@@ -64,9 +99,8 @@ class Config:
         return {
             "chunk_size": cls.CHUNK_SIZE,
             "chunk_overlap": cls.CHUNK_OVERLAP,
-            "embedding_provider": cls.EMBEDDING_PROVIDER,
-            "embedding_model": cls.EMBEDDING_MODEL if cls.EMBEDDING_PROVIDER == "gemini" else cls.LOCAL_EMBEDDING_MODEL,
+            "embedding_model": cls.LOCAL_EMBEDDING_MODEL,
             "embedding_batch_size": cls.EMBEDDING_BATCH_SIZE,
             "llm_provider": cls.LLM_PROVIDER,
-            "api_key_configured": bool(cls.GEMINI_API_KEY)
+            "api_keys_count": len(cls.get_gemini_api_keys())
         }

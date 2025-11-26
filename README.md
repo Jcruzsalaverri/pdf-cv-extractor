@@ -2,6 +2,17 @@
 
 A specialized Python system for processing, analyzing, and screening CVs using LLM-powered extraction and RAG (Retrieval Augmented Generation).
 
+## 📢 Release Notes (2025-11-26)
+
+### **Single-Chunk Architecture & API Rotation**
+
+- **Single Comprehensive Chunk**: Each CV is now processed as a single, comprehensive text chunk containing all structured data (skills, experience, education). This improves search accuracy by providing full context to the embedding model.
+- **API Key Rotation**: Implemented automatic rotation for Gemini API keys to eliminate rate limit issues during batch processing.
+- **Local Embeddings**: Switched to local `all-mpnet-base-v2` model exclusively for embeddings (faster, free, private).
+- **Simplified Codebase**: Consolidated chunking logic and removed unused modules.
+
+---
+
 ## 🎯 What This System Does
 
 **Transform CVs → Searchable Database → Intelligent Screening**
@@ -21,11 +32,17 @@ A specialized Python system for processing, analyzing, and screening CVs using L
 pip install -r requirements.txt
 ```
 
-### 2. Configure API Key
+### 2. Configure API Keys
 
 ```bash
 cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
+# Edit .env and add your GEMINI_API_KEYS (comma-separated)
+```
+
+**Example `.env`:**
+```bash
+# Comma-separated list for rotation
+GEMINI_API_KEYS=key1,key2,key3,key4
 ```
 
 ### 3. Process CVs
@@ -42,14 +59,11 @@ python batch_processor.py cvs
 ### 4. Search Candidates
 
 ```bash
-# List all candidates
-python metadata_store.py list
+# Semantic search
+python search_cvs.py "senior data engineer with cloud experience"
 
-# Search by skill
+# Metadata search
 python metadata_store.py search-skill Python
-
-# Get statistics
-python metadata_store.py stats
 ```
 
 ---
@@ -69,9 +83,10 @@ python batch_processor.py ./cvs_folder
 1. ✅ Extract text from PDFs (`extract_text.py`)
 2. ✅ Clean formatting artifacts (`text_cleaner.py`)
 3. ✅ Extract structured data (`cv_extractor.py`)
-4. ✅ Generate embeddings (`embedding.py`)
-5. ✅ Store in vector database (`vector_store.py`)
-6. ✅ Index in metadata store (`metadata_store.py`)
+4. ✅ Format as single comprehensive chunk (`chunking.py`)
+5. ✅ Generate embeddings locally (`embedding.py`)
+6. ✅ Store in vector database (`vector_store.py`)
+7. ✅ Index in metadata store (`metadata_store.py`)
 
 **Output (in `data/` folder):**
 
@@ -157,8 +172,8 @@ pdf-agent/
 │   ├── extract_text.py          # PDF → text
 │   ├── text_cleaner.py          # Clean formatting
 │   ├── cv_extractor.py          # Extract structured data
-│   ├── chunking.py              # Split into chunks
-│   ├── embedding.py             # Generate embeddings
+│   ├── chunking.py              # Format CV as single chunk
+│   ├── embedding.py             # Generate local embeddings
 │   └── batch_processor.py       # Orchestrate all steps
 │
 ├── Database
@@ -174,12 +189,6 @@ pdf-agent/
 ├── Data (gitignored)
 │   ├── data/                    # Processed CVs
 │   └── chroma_db/              # Vector database
-│
-├── Tests & Utilities
-│   └── tests/
-│       ├── test_chunking.py
-│       ├── analyze_embeddings.py
-│       └── debug_search.py
 │
 └── Documentation
     ├── README.md               # This file
@@ -199,14 +208,10 @@ Edit `.env` file:
 ```bash
 # LLM Provider (for text cleaning & extraction)
 LLM_PROVIDER=gemini
-GEMINI_API_KEY=your_key_here
+GEMINI_API_KEYS=key1,key2,key3  # Comma-separated list
 
-# Embedding Model
-EMBEDDING_MODEL=models/embedding-001
-
-# Chunking
-CHUNK_SIZE=512
-CHUNK_OVERLAP=50
+# Embedding Model (Local Only)
+LOCAL_EMBEDDING_MODEL=all-mpnet-base-v2
 
 # Retrieval
 RETRIEVAL_TOP_K=5
@@ -217,10 +222,8 @@ RETRIEVAL_TOP_K=5
 ## 📚 Documentation
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
-- **[TECHNICAL_GUIDE.md](docs/TECHNICAL_GUIDE.md)** - Complete technical reference
-- **[RAG_PIPELINE_EXPLAINED.md](docs/RAG_PIPELINE_EXPLAINED.md)** - Deep dive into RAG
+- **[SYSTEM_DOCUMENTATION.md](docs/TECHNICAL_GUIDE.md)** - Complete technical reference
 - **[THEORETICAL_FOUNDATIONS.md](docs/THEORETICAL_FOUNDATIONS.md)** - Why RAG works
-
 ---
 
 ## 🔧 Requirements
@@ -229,7 +232,8 @@ RETRIEVAL_TOP_K=5
 - PyMuPDF (PDF extraction)
 - LangChain (LLM integration)
 - ChromaDB (vector database)
-- Google Gemini API key (for LLM & embeddings)
+- Google Gemini API key(s) (for LLM extraction)
+- SentenceTransformers (for local embeddings)
 
 Install all:
 
@@ -242,11 +246,11 @@ pip install -r requirements.txt
 ## 💡 Key Features
 
 ✅ **LLM-powered extraction** - Intelligent data extraction from any CV format  
+✅ **Single-Chunk Context** - Full CV context in one vector for better matching  
+✅ **API Key Rotation** - Automatically cycles keys to avoid rate limits  
+✅ **Local Embeddings** - Free, fast, and private embedding generation  
 ✅ **Hybrid search** - Semantic (vector) + exact (metadata) search  
 ✅ **Batch processing** - Process hundreds of CVs automatically  
-✅ **Structured data** - Skills, experience, education in JSON format  
-✅ **Persistent storage** - ChromaDB + JSON for fast queries  
-✅ **Production-ready** - Error handling, logging, progress tracking  
 
 ---
 

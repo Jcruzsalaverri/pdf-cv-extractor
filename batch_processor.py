@@ -19,7 +19,7 @@ from tqdm import tqdm
 from extract_text import extract_text_from_pdf
 from text_cleaner import clean_and_structure_cv
 from cv_extractor import extract_cv_data
-from semantic_chunking import create_semantic_chunks_from_cvdata
+from chunking import format_cv_for_search
 from embedding import generate_embeddings
 from vector_store import load_embeddings_to_store
 from metadata_store import MetadataStore
@@ -60,13 +60,24 @@ def process_single_cv(
         print(f"Processing: {pdf_path.name}")
         print(f"{'='*70}")
         
+        # Get API key for rotation (if using Gemini)
+        from config import Config
+        api_keys = Config.get_gemini_api_keys()
+        current_api_key = None
+        
+        if api_keys and Config.LLM_PROVIDER == "gemini":
+            # Rotate through keys based on file index or use modulo
+            key_index = hash(str(pdf_path)) % len(api_keys)
+            current_api_key = api_keys[key_index]
+            print(f"🔑 Using API key #{key_index + 1} of {len(api_keys)}")
+        
         # Step 1: Extract text
         print("1️⃣  Extracting text from PDF...")
         raw_text = extract_text_from_pdf(str(pdf_path))
         
         # Step 2: Clean text
         print("2️⃣  Cleaning text...")
-        cleaned_result = clean_and_structure_cv(raw_text, provider=provider)
+        cleaned_result = clean_and_structure_cv(raw_text, provider=provider, api_key=current_api_key)
         cleaned_text = cleaned_result['cleaned_text']
         
         # Save cleaned text
@@ -76,7 +87,7 @@ def process_single_cv(
         
         # Step 3: Extract structured data
         print("3️⃣  Extracting structured data...")
-        cv_data = extract_cv_data(cleaned_text, source_file=str(pdf_path), provider=provider)
+        cv_data = extract_cv_data(cleaned_text, source_file=str(pdf_path), provider=provider, api_key=current_api_key)
         results["candidate_name"] = cv_data.candidate_name
         
         # Save extracted data
@@ -84,13 +95,13 @@ def process_single_cv(
         with open(extracted_file, 'w', encoding='utf-8') as f:
             f.write(cv_data.to_json())
         
-        # Step 4: Create semantic chunks from structured data
-        print("4️⃣  Creating semantic chunks from CV data...")
-        chunks = create_semantic_chunks_from_cvdata(
+        # Step 4: Format CV data for vector search
+        print("4️⃣  Formatting CV data for search...")
+        chunks = format_cv_for_search(
             cv_data=cv_data,
             source_file=str(pdf_path)
         )
-        print(f"   Created {len(chunks)} semantic chunks")
+        print(f"   ✓ Created comprehensive profile chunk")
         
         # Step 5: Generate embeddings
         print("5️⃣  Generating embeddings...")

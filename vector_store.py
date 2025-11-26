@@ -142,7 +142,7 @@ def search_similar(
     Returns:
         List[Dict]: List of results with text, metadata, and scores
     """
-    from embedding import generate_local_embedding
+    from embedding import generate_embedding
     
     top_k = top_k or Config.RETRIEVAL_TOP_K
     score_threshold = score_threshold or Config.RETRIEVAL_SCORE_THRESHOLD
@@ -154,7 +154,7 @@ def search_similar(
     
     # Generate query embedding
     print("📥 Loading embedding model and generating query embedding...")
-    query_embedding = generate_local_embedding(query)
+    query_embedding = generate_embedding(query)
     print("✓ Query embedding generated")
     
     # Search
