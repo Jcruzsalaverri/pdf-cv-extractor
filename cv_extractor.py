@@ -15,7 +15,7 @@ import re
 from pydantic import BaseModel, Field, field_validator, ConfigDict, ValidationError
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_anthropic import ChatAnthropic
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from config import Config
 
 

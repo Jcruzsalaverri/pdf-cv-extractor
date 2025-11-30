@@ -7,7 +7,7 @@ This module cleans raw PDF text to improve embedding quality and retrieval accur
 from typing import Dict, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_anthropic import ChatAnthropic
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from config import Config
 import re
 

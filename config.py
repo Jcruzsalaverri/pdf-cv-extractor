@@ -75,6 +75,11 @@ class Config:
     # Vector Store Configuration
     VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./chroma_db")
     
+    # LangGraph Configuration
+    LANGGRAPH_CHECKPOINT_BACKEND: str = os.getenv("LANGGRAPH_CHECKPOINT_BACKEND", "memory")  # memory, sqlite, postgres
+    LANGGRAPH_MAX_RETRIES: int = int(os.getenv("LANGGRAPH_MAX_RETRIES", "3"))
+    LANGGRAPH_RETRY_DELAY: int = int(os.getenv("LANGGRAPH_RETRY_DELAY", "2"))  # seconds
+    
     @classmethod
     def validate(cls) -> bool:
         """Validate that required configuration is present."""

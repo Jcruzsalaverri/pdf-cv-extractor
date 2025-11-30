@@ -2,6 +2,17 @@
 
 A specialized Python system for processing, analyzing, and screening CVs using LLM-powered extraction and RAG (Retrieval Augmented Generation).
 
+## 📢 Release Notes (2025-11-30)
+
+### **LangGraph Orchestration & Robustness**
+
+- **LangGraph Integration**: Replaced the linear batch processor with a stateful `LangGraph` workflow. This enables better orchestration, observability, and future-proofing for complex flows.
+- **Granular Error Handling**: The new graph architecture handles errors at each step (extraction, cleaning, embedding) individually, preventing entire batch failures.
+- **State Management**: Full state tracking throughout the pipeline, making it easier to debug and resume processing.
+- **Enhanced CLI**: New command-line interface with progress tracking and detailed summary reports.
+
+---
+
 ## 📢 Release Notes (2025-11-26)
 
 ### **Single-Chunk Architecture & API Rotation**
@@ -70,9 +81,17 @@ python metadata_store.py search-skill Python
 
 ## 📋 Core Pipeline
 
-### **`batch_processor.py`** - Main Orchestrator
+### **`langgraph_processor.py`** - Main Orchestrator (New)
 
-Processes CVs through the complete pipeline:
+Processes CVs through the complete pipeline using a stateful graph:
+
+```bash
+python langgraph_processor.py ./cvs_folder
+```
+
+### **`batch_processor.py`** - Legacy Orchestrator
+
+Processes CVs through the complete pipeline (linear execution):
 
 ```bash
 python batch_processor.py ./cvs_folder
@@ -174,7 +193,8 @@ pdf-agent/
 │   ├── cv_extractor.py          # Extract structured data
 │   ├── chunking.py              # Format CV as single chunk
 │   ├── embedding.py             # Generate local embeddings
-│   └── batch_processor.py       # Orchestrate all steps
+│   ├── langgraph_processor.py   # Graph-based orchestrator (New)
+│   └── batch_processor.py       # Legacy orchestrator
 │
 ├── Database
 │   ├── vector_store.py          # ChromaDB (semantic search)
